@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.scratch/
+.tmp/
+build/
+dist/
+*.spec
+crash.log
+launcher_error.log
