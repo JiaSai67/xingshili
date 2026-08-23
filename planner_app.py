@@ -1,13 +1,14 @@
+import os
+import sys
+import json
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
                              QLabel, QPushButton, QScrollArea, QFrame, QInputDialog, QMessageBox, 
                              QGraphicsOpacityEffect, QGraphicsDropShadowEffect, QLayout, QFileDialog,
-                             QSlider, QMenu, QDialog)
-from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QParallelAnimationGroup, QEvent, QTimer
-from PyQt6.QtGui import QFont, QCursor, QIcon, QPainter, QPixmap, QColor
-import sys
-import json
+                             QSlider, QMenu, QDialog, QListWidget, QStackedWidget, QComboBox, QListWidgetItem)
+from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QParallelAnimationGroup, QEvent, QTimer, QByteArray
+from PyQt6.QtGui import QFont, QCursor, QIcon, QPainter, QPixmap, QColor, QFontDatabase
 
-from config import get_font, COLORS, load_data, save_data, get_resource_path
+from config import get_font, COLORS, load_data, save_data, get_resource_path, GLOBAL_SETTINGS
 from components.project_button import ProjectButton
 from components.task_widget import TaskWidget, AddParentButton
 from components.favorite_button import FavoriteButton
@@ -239,7 +240,6 @@ class SettingsDialog(QDialog):
         key = f"{target_id}_font_file" if target_id != "default" else "font_file"
         settings[key] = font_file
         self.app_ref.save_data_debounced()
-        from config import GLOBAL_SETTINGS
         GLOBAL_SETTINGS.update(settings)
         self.app_ref.apply_custom_fonts_live()
         
@@ -251,67 +251,8 @@ class SettingsDialog(QDialog):
         key = f"{target_id}_font_size_offset" if target_id != "default" else "font_size_offset"
         settings[key] = val
         self.app_ref.save_data_debounced()
-        from config import GLOBAL_SETTINGS
         GLOBAL_SETTINGS.update(settings)
         self.app_ref.apply_custom_fonts_live()
-        
-    def on_font_slider_changed(self, val):
-        slider = self.sender()
-        target_id = slider.property("target_id")
-        self.font_val_labels[target_id].setText(f"{val:+d}")
-        settings = self.app_ref.projects.setdefault("__settings__", {})
-        key = f"{target_id}_font_size_offset" if target_id != "default" else "font_size_offset"
-        settings[key] = val
-        self.app_ref.save_data_debounced()
-        from config import GLOBAL_SETTINGS
-        GLOBAL_SETTINGS.update(settings)
-        
-    
-        
-    def apply_custom_fonts_live(self):
-        settings = self.projects.get("__settings__", {})
-        font_file = settings.get("font_file", "default")
-        from PyQt6.QtGui import QFontDatabase, QFont
-        from PyQt6.QtWidgets import QApplication
-        import os
-        from config import get_resource_path, get_font
-        
-        if font_file != "default":
-            font_path = get_resource_path(os.path.join("fonts", font_file))
-            if os.path.exists(font_path):
-                font_id = QFontDatabase.addApplicationFont(font_path)
-                if font_id != -1:
-                    font_families = QFontDatabase.applicationFontFamilies(font_id)
-                    if font_families:
-                        app_font = QFont(font_families[0])
-                        QApplication.instance().setFont(app_font)
-        else:
-            QApplication.instance().setFont(QFont("Segoe UI Variable Display, Microsoft YaHei UI"))
-            
-        self.lbl_right_title.setFont(get_font(22, QFont.Weight.Bold, target="title"))
-        self.lbl_title.setFont(get_font(18, QFont.Weight.Bold, target="sidebar"))
-        self.btn_add_proj.setFont(get_font(13, target="sidebar"))
-        self.btn_import_proj.setFont(get_font(13, target="sidebar"))
-        self.btn_export.setFont(get_font(12, target="default"))
-        
-        # Redraw UI elements to apply fonts instantly
-        expanded_cats = []
-        for i in range(self.categories_layout.count()):
-            w = self.categories_layout.itemAt(i).widget()
-            if hasattr(w, 'is_expanded') and w.is_expanded:
-                expanded_cats.append(w.category_name)
-                
-        self.refresh_projects()
-        
-        # Restore expanded state
-        for i in range(self.categories_layout.count()):
-            w = self.categories_layout.itemAt(i).widget()
-            if hasattr(w, 'category_name') and w.category_name in expanded_cats:
-                if not w.is_expanded:
-                    w.toggle_expand()
-                
-        if self.current_project:
-            self.load_project(self.current_project)
             
     def on_bg_opacity_changed(self, val):
         self.val_bg_op.setText(f"{val}%")
@@ -452,8 +393,6 @@ class PlannerApp(QMainWindow):
         settings = self.projects.get("__settings__", {})
         font_file = settings.get("font_file", "default")
         if font_file != "default":
-            from PyQt6.QtGui import QFontDatabase, QFont
-            import os
             font_path = get_resource_path(os.path.join("fonts", font_file))
             if os.path.exists(font_path):
                 font_id = QFontDatabase.addApplicationFont(font_path)
@@ -838,10 +777,6 @@ class PlannerApp(QMainWindow):
     def apply_custom_fonts_live(self):
         settings = self.projects.get("__settings__", {})
         font_file = settings.get("font_file", "default")
-        from PyQt6.QtGui import QFontDatabase, QFont
-        from PyQt6.QtWidgets import QApplication
-        import os
-        from config import get_resource_path, get_font
         
         if font_file != "default":
             font_path = get_resource_path(os.path.join("fonts", font_file))
