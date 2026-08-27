@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit
 from PyQt6.QtCore import Qt, QTimer, QEvent, QPropertyAnimation, QEasingCurve, QParallelAnimationGroup, QMimeData, QPoint
 from PyQt6.QtGui import QFont, QPixmap, QCursor, QDrag
 
-from config import get_font, COLORS, save_data, get_resource_path
+from config import get_font, COLORS, hex_to_rgba, save_data, get_resource_path
 from components.hover_label import HoverLabel
 
 class AddParentButton(QWidget):
@@ -15,7 +15,9 @@ class AddParentButton(QWidget):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 15, 0, 15)
         
-        self.lbl = HoverLabel("＋ 新增母項目", COLORS["divider_strong"], COLORS["accent_hover"], 14, True, parent=self)
+        is_memo = self.app_ref.is_project_memo_mode()
+        lbl_text = "＋ 新增備忘項目" if is_memo else "＋ 新增母項目"
+        self.lbl = HoverLabel(lbl_text, COLORS["divider_strong"], COLORS["accent_hover"], 14, True, parent=self)
         self.lbl.clicked.connect(self.add_parent)
         layout.addWidget(self.lbl)
         layout.addStretch()
@@ -51,18 +53,7 @@ class TaskWidget(QWidget):
         self.header.setObjectName("TaskHeader")
         self.header.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         
-        # 半透明浮動卡片設計 (Floating Cards)
-        opacity = self.app_ref.projects.get("__settings__", {}).get("task_opacity", 0.75)
-        self.header.setStyleSheet(f"""
-            #TaskHeader {{
-                background-color: rgba(250, 249, 246, {opacity});
-                border-radius: 8px;
-                margin: 2px 10px 2px 0px;
-            }}
-            #TaskHeader:hover {{
-                background-color: rgba(250, 249, 246, {min(1.0, opacity + 0.2)});
-            }}
-        """)
+        self.update_opacity_style()
         
         self.h_layout = QHBoxLayout(self.header)
         indent = (level - 1) * 35
@@ -142,14 +133,16 @@ class TaskWidget(QWidget):
 
     def update_opacity_style(self):
         opacity = self.app_ref.projects.get("__settings__", {}).get("task_opacity", 0.75)
+        bg_color = hex_to_rgba(COLORS['card_bg'], opacity)
+        bg_hover = hex_to_rgba(COLORS['card_bg'], min(1.0, opacity + 0.2))
         self.header.setStyleSheet(f"""
             #TaskHeader {{
-                background-color: rgba(250, 249, 246, {opacity});
+                background-color: {bg_color};
                 border-radius: 8px;
                 margin: 2px 10px 2px 0px;
             }}
             #TaskHeader:hover {{
-                background-color: rgba(250, 249, 246, {min(1.0, opacity + 0.2)});
+                background-color: {bg_hover};
             }}
         """)
 
@@ -157,24 +150,34 @@ class TaskWidget(QWidget):
         text = self.task_data.get("text", "")
         self.lbl_text.setText(text)
         
-        self.is_done = self.task_data.get("done", False)
-        if self.is_done:
-            self.lbl_icon.setText("")
-            self.lbl_icon.setPixmap(QPixmap(get_resource_path("assets/cat_paw.svg")).scaled(18, 18, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
-            color = COLORS["text_done"]
+        is_memo = self.app_ref.is_project_memo_mode()
+        if is_memo:
+            self.lbl_icon.hide()
+            self.lbl_text.default_color = COLORS["text_main"]
+            self.lbl_text.setStyleSheet(f"color: {COLORS['text_main']}; background: transparent;")
+            font = self.lbl_text.font()
+            font.setStrikeOut(False)
+            self.lbl_text.setFont(font)
         else:
-            self.lbl_icon.setPixmap(QPixmap())
-            self.lbl_icon.setText("☐")
-            color = COLORS["text_main"]
-        
-        self.lbl_icon.default_color = color
-        self.lbl_icon.setStyleSheet(f"color: {color}; background: transparent;")
-        
-        self.lbl_text.default_color = color
-        self.lbl_text.setStyleSheet(f"color: {color}; background: transparent;")
-        font = self.lbl_text.font()
-        font.setStrikeOut(self.is_done)
-        self.lbl_text.setFont(font)
+            self.lbl_icon.show()
+            self.is_done = self.task_data.get("done", False)
+            if self.is_done:
+                self.lbl_icon.setText("")
+                self.lbl_icon.setPixmap(QPixmap(get_resource_path("assets/cat_paw.svg")).scaled(18, 18, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+                color = COLORS["text_done"]
+            else:
+                self.lbl_icon.setPixmap(QPixmap())
+                self.lbl_icon.setText("☐")
+                color = COLORS["text_main"]
+            
+            self.lbl_icon.default_color = color
+            self.lbl_icon.setStyleSheet(f"color: {color}; background: transparent;")
+            
+            self.lbl_text.default_color = color
+            self.lbl_text.setStyleSheet(f"color: {color}; background: transparent;")
+            font = self.lbl_text.font()
+            font.setStrikeOut(self.is_done)
+            self.lbl_text.setFont(font)
         
         has_children = len(self.task_data.get("children", [])) > 0
         is_collapsed = self.task_data.get("collapsed", False)
@@ -277,15 +280,15 @@ class TaskWidget(QWidget):
 
     def contextMenuEvent(self, event):
         menu = QMenu(self)
-        menu.setStyleSheet("""
-            QMenu {
-                background-color: #FCF8F9;
-                border: 1px solid #DFBAC5;
-                color: #4A4144;
-            }
-            QMenu::item:selected {
-                background-color: #EFCBD6;
-            }
+        menu.setStyleSheet(f"""
+            QMenu {{
+                background-color: {COLORS['bg_right']};
+                border: 1px solid {COLORS['divider_strong']};
+                color: {COLORS['text_main']};
+            }}
+            QMenu::item:selected {{
+                background-color: {COLORS['bg_active']};
+            }}
         """)
         action = menu.addAction("⭐ 加入我的最愛")
         selected = menu.exec(event.globalPos())
@@ -306,6 +309,8 @@ class TaskWidget(QWidget):
             self.app_ref.refresh_favorites()
 
     def toggle_check(self):
+        if self.app_ref.is_project_memo_mode():
+            return
         new_state = not self.task_data.get("done", False)
         def update_data_recursive(t, state):
             t["done"] = state
@@ -335,9 +340,10 @@ class TaskWidget(QWidget):
             _, group_id, _ = event.mimeData().text().split(":")
             if group_id == str(id(self.parent_list)):
                 event.acceptProposedAction()
+                bg_drag = hex_to_rgba(COLORS['card_bg'], 0.95)
                 self.header.setStyleSheet(f"""
                     #TaskHeader {{
-                        background-color: rgba(250, 249, 246, 0.95);
+                        background-color: {bg_drag};
                         border: 2px dashed {COLORS['accent']};
                         border-radius: 8px;
                         margin: 2px 10px 2px 0px;

@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton, QApplicat
 from PyQt6.QtCore import Qt, QEvent, QTimer, QMimeData
 from PyQt6.QtGui import QFont, QCursor, QDrag
 
-from config import get_font, COLORS, save_data
+from config import get_font, COLORS, hex_to_rgba, save_data
 
 class FavoriteButton(QWidget):
     def __init__(self, fav_data, app_ref, category_name=None, item_index=-1):
@@ -59,7 +59,7 @@ class FavoriteButton(QWidget):
     def eventFilter(self, obj, event):
         if obj == self:
             if event.type() == QEvent.Type.Enter:
-                self.setStyleSheet(f"background-color: rgba(239, 203, 214, 0.4);")
+                self.setStyleSheet(f"background-color: {hex_to_rgba(COLORS['bg_active'], 0.4)};")
                 self.btn_del.setStyleSheet(f"color: {COLORS['divider_strong']}; background: transparent;")
             elif event.type() == QEvent.Type.Leave:
                 self.setStyleSheet("background-color: transparent;")

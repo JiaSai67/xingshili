@@ -20,12 +20,25 @@ COLORS = {
     "bg_active": "#EFCBD6",
     "text_title": "#2D282A",
     "text_main": "#4A4144",
+    "text_muted": "#888888",
     "text_done": "#B3A6AA",
     "accent": "#D68C9F",
     "accent_hover": "#C5788C",
     "divider": "#EAD9DE",
-    "divider_strong": "#DFBAC5"
+    "divider_strong": "#DFBAC5",
+    "card_bg": "#FAF9F6",
+    "highlight_bg": "#FFC8C8",
+    "error": "#C42B1C",
+    "white": "#FFFFFF"
 }
+
+def hex_to_rgba(hex_code, alpha):
+    """Convert hex color string to rgba string"""
+    h = hex_code.lstrip("#")
+    r = int(h[0:2], 16)
+    g = int(h[2:4], 16)
+    b = int(h[4:6], 16)
+    return f"rgba({r}, {g}, {b}, {alpha})"
 
 import uuid
 

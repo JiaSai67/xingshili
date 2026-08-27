@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QH
 from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QParallelAnimationGroup, QEvent, QTimer, QByteArray
 from PyQt6.QtGui import QFont, QCursor, QIcon, QPainter, QPixmap, QColor, QFontDatabase
 
-from config import get_font, COLORS, load_data, save_data, get_resource_path, GLOBAL_SETTINGS
+from config import get_font, COLORS, hex_to_rgba, load_data, save_data, get_resource_path, GLOBAL_SETTINGS
 from components.project_button import ProjectButton
 from components.task_widget import TaskWidget, AddParentButton
 from components.favorite_button import FavoriteButton
@@ -55,7 +55,7 @@ class SettingsDialog(QDialog):
             }}
             QListWidget::item:selected {{
                 background-color: {COLORS['accent']};
-                color: white;
+                color: {COLORS['white']};
             }}
             QListWidget::item:hover:!selected {{
                 background-color: {COLORS['bg_active']};
@@ -148,7 +148,7 @@ class SettingsDialog(QDialog):
         create_target_section("task", "待辦清單")
         
         lbl_font_hint = QLabel("提示: 修改後請重新啟動程式以完整套用字體變更。")
-        lbl_font_hint.setStyleSheet("color: #888888; font-size: 12px; margin-top: 5px;")
+        lbl_font_hint.setStyleSheet(f"color: {COLORS['text_muted']}; font-size: 12px; margin-top: 5px;")
         scroll_layout.addWidget(lbl_font_hint)
         scroll_layout.addStretch()
         
@@ -203,7 +203,7 @@ class SettingsDialog(QDialog):
         
         btn_close = QPushButton("關閉")
         btn_close.setFixedSize(80, 32)
-        btn_close.setStyleSheet(f"background-color: {COLORS['accent']}; color: white; border-radius: 4px; font-weight: bold;")
+        btn_close.setStyleSheet(f"background-color: {COLORS['accent']}; color: {COLORS['white']}; border-radius: 4px; font-weight: bold;")
         btn_close.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_close.clicked.connect(self.accept)
         
@@ -429,7 +429,7 @@ class PlannerApp(QMainWindow):
         # Settings Button (Hamburger)
         self.btn_settings = QPushButton("☰", self.left_frame)
         self.btn_settings.setGeometry(8, 8, 20, 20)
-        self.btn_settings.setStyleSheet("color: #555555; font-family: 'Segoe UI', Arial; font-size: 16px; font-weight: bold; background: transparent; border: none; padding: 0px;")
+        self.btn_settings.setStyleSheet(f"color: {COLORS['text_main']}; font-family: 'Segoe UI Variable Display', 'Microsoft YaHei UI', Arial; font-size: 16px; font-weight: bold; background: transparent; border: none; padding: 0px;")
         self.btn_settings.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_settings.clicked.connect(self.open_settings)
         self.btn_settings.show()
@@ -439,10 +439,10 @@ class PlannerApp(QMainWindow):
         title_layout = QHBoxLayout()
         title_layout.setContentsMargins(15, 0, 15, 0)
         
-        lbl_title = QLabel("Daily Plan")
-        lbl_title.setFont(get_font(18, QFont.Weight.Bold))
-        lbl_title.setStyleSheet(f"color: {COLORS['accent']}; padding-left: 25px; background: transparent;")
-        title_layout.addWidget(lbl_title)
+        self.lbl_title = QLabel("Daily Plan")
+        self.lbl_title.setFont(get_font(18, QFont.Weight.Bold, target="sidebar"))
+        self.lbl_title.setStyleSheet(f"color: {COLORS['accent']}; padding-left: 25px; background: transparent;")
+        title_layout.addWidget(self.lbl_title)
         title_layout.addStretch()
         left_layout.addLayout(title_layout)
         
@@ -465,28 +465,28 @@ class PlannerApp(QMainWindow):
         self.sidebar_scroll.setWidget(self.sidebar_content)
         left_layout.addWidget(self.sidebar_scroll)
         
-        btn_add_proj = QPushButton("+ 新增")
-        btn_add_proj.setFont(get_font(13))
-        btn_add_proj.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        btn_add_proj.setStyleSheet(f"""
+        self.btn_add_proj = QPushButton("+ 新增")
+        self.btn_add_proj.setFont(get_font(13, target="sidebar"))
+        self.btn_add_proj.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_add_proj.setStyleSheet(f"""
             QPushButton {{ background-color: transparent; color: {COLORS['accent_hover']}; border: none; padding: 10px; }}
             QPushButton:hover {{ background-color: {COLORS['bg_active']}; }}
         """)
-        btn_add_proj.clicked.connect(self.add_project)
+        self.btn_add_proj.clicked.connect(self.add_project)
         
-        btn_import_proj = QPushButton("📥 匯入")
-        btn_import_proj.setFont(get_font(13))
-        btn_import_proj.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        btn_import_proj.setStyleSheet(f"""
+        self.btn_import_proj = QPushButton("📥 匯入")
+        self.btn_import_proj.setFont(get_font(13, target="sidebar"))
+        self.btn_import_proj.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_import_proj.setStyleSheet(f"""
             QPushButton {{ background-color: transparent; color: {COLORS['accent_hover']}; border: none; padding: 10px; }}
             QPushButton:hover {{ background-color: {COLORS['bg_active']}; }}
         """)
-        btn_import_proj.clicked.connect(self.import_project)
+        self.btn_import_proj.clicked.connect(self.import_project)
         
         bottom_left_layout = QHBoxLayout()
         bottom_left_layout.setContentsMargins(0, 0, 0, 0)
-        bottom_left_layout.addWidget(btn_add_proj)
-        bottom_left_layout.addWidget(btn_import_proj)
+        bottom_left_layout.addWidget(self.btn_add_proj)
+        bottom_left_layout.addWidget(self.btn_import_proj)
         
         left_layout.addLayout(bottom_left_layout)
         
@@ -498,6 +498,7 @@ class PlannerApp(QMainWindow):
         right_layout.setContentsMargins(50, 45, 46, 40)
         
         title_layout = QHBoxLayout()
+        title_layout.setSpacing(8)
         
         self.lbl_right_title = QLabel("")
         self.lbl_right_title.setFont(get_font(22, QFont.Weight.Bold, target="title"))
@@ -513,8 +514,49 @@ class PlannerApp(QMainWindow):
         title_layout.addWidget(self.lbl_right_title)
         title_layout.addStretch()
         
+        # Mode Toggle Button (Todo vs Memo)
+        self.btn_mode_toggle = QPushButton("☑️ 待辦清單")
+        self.btn_mode_toggle.setFont(get_font(12, target="default"))
+        self.btn_mode_toggle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_mode_toggle.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {COLORS['bg_left']};
+                color: {COLORS['text_main']};
+                border: 1px solid {COLORS['divider_strong']};
+                border-radius: 6px;
+                padding: 6px 12px;
+            }}
+            QPushButton:hover {{
+                background-color: {COLORS['bg_active']};
+            }}
+        """)
+        self.btn_mode_toggle.clicked.connect(self.toggle_project_mode)
+        self.btn_mode_toggle.setVisible(False)
+        title_layout.addWidget(self.btn_mode_toggle)
+        
+        # Uncheck All Button
+        self.btn_uncheck_all = QPushButton("🔄 一鍵取消勾選")
+        self.btn_uncheck_all.setFont(get_font(12, target="default"))
+        self.btn_uncheck_all.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_uncheck_all.setToolTip("取消當前清單的所有勾選狀態")
+        self.btn_uncheck_all.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {COLORS['bg_left']};
+                color: {COLORS['text_main']};
+                border: 1px solid {COLORS['divider_strong']};
+                border-radius: 6px;
+                padding: 6px 12px;
+            }}
+            QPushButton:hover {{
+                background-color: {COLORS['bg_active']};
+            }}
+        """)
+        self.btn_uncheck_all.clicked.connect(self.uncheck_all_tasks)
+        self.btn_uncheck_all.setVisible(False)
+        title_layout.addWidget(self.btn_uncheck_all)
+        
         self.btn_export = QPushButton("📤 匯出目前清單")
-        self.btn_export.setFont(get_font(12))
+        self.btn_export.setFont(get_font(12, target="default"))
         self.btn_export.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_export.setStyleSheet(f"""
             QPushButton {{
@@ -630,10 +672,67 @@ class PlannerApp(QMainWindow):
                     pw.setup_edit_mode()
                     break
 
+    def is_project_memo_mode(self, project_name=None):
+        if project_name is None:
+            project_name = self.current_project
+        if not project_name:
+            return False
+        settings = self.projects.get("__settings__", {})
+        modes = settings.get("project_modes", {})
+        return modes.get(project_name, "todo") == "memo"
+
+    def toggle_project_mode(self):
+        if not self.current_project:
+            return
+        settings = self.projects.setdefault("__settings__", {})
+        modes = settings.setdefault("project_modes", {})
+        curr_mode = modes.get(self.current_project, "todo")
+        new_mode = "memo" if curr_mode == "todo" else "todo"
+        modes[self.current_project] = new_mode
+        self.save_data_debounced()
+        self.update_mode_ui()
+        self.render_tasks_no_anim()
+
+    def uncheck_all_tasks(self):
+        if not self.current_project:
+            return
+        tasks = self.projects.get(self.current_project, [])
+        if not tasks:
+            return
+            
+        def uncheck_recursive(t_list):
+            for t in t_list:
+                t["done"] = False
+                if "children" in t:
+                    uncheck_recursive(t["children"])
+                    
+        uncheck_recursive(tasks)
+        self.save_data_debounced()
+        self.render_tasks_no_anim()
+
+    def update_mode_ui(self):
+        if not self.current_project:
+            self.btn_mode_toggle.setVisible(False)
+            self.btn_uncheck_all.setVisible(False)
+            self.btn_export.setVisible(False)
+            return
+            
+        is_memo = self.is_project_memo_mode(self.current_project)
+        self.btn_mode_toggle.setVisible(True)
+        self.btn_export.setVisible(True)
+        if is_memo:
+            self.btn_mode_toggle.setText("📝 備忘錄模式")
+            self.btn_mode_toggle.setToolTip("目前為備忘錄模式（無勾選框）。點擊切換為待辦清單模式")
+            self.btn_uncheck_all.setVisible(False)
+        else:
+            self.btn_mode_toggle.setText("☑️ 待辦清單")
+            self.btn_mode_toggle.setToolTip("目前為待辦清單模式（含勾選框）。點擊切換為備忘錄模式")
+            self.btn_uncheck_all.setVisible(True)
+
     def load_project(self, name):
         self.current_project = name
         self.lbl_right_title.setText(name)
-        self.btn_export.setVisible(True)
+        self.update_mode_ui()
         
         for pw in self.proj_widgets:
             pw.update_style(pw.name == name)
@@ -670,18 +769,21 @@ class PlannerApp(QMainWindow):
                 i for i in items 
                 if not ((isinstance(i, dict) and i.get("target") == name) or (isinstance(i, str) and i == name))
             ]
+        modes = settings.get("project_modes", {})
+        if name in modes:
+            del modes[name]
             
         self.save_data_debounced()
         self.refresh_projects()
         
         if self.current_project and self.current_project != "__settings__":
             self.lbl_right_title.setText(self.current_project)
-            self.btn_export.setVisible(True)
+            self.update_mode_ui()
             self.render_tasks_no_anim()
         else:
             self.current_project = None
             self.lbl_right_title.setText("")
-            self.btn_export.setVisible(False)
+            self.update_mode_ui()
             self.render_tasks_no_anim()
 
     def render_tasks_no_anim(self):
@@ -791,26 +893,38 @@ class PlannerApp(QMainWindow):
             QApplication.instance().setFont(QFont("Segoe UI Variable Display, Microsoft YaHei UI"))
             
         self.lbl_right_title.setFont(get_font(22, QFont.Weight.Bold, target="title"))
-        self.lbl_title.setFont(get_font(18, QFont.Weight.Bold, target="sidebar"))
-        self.btn_add_proj.setFont(get_font(13, target="sidebar"))
-        self.btn_import_proj.setFont(get_font(13, target="sidebar"))
-        self.btn_export.setFont(get_font(12, target="default"))
+        if hasattr(self, 'lbl_title'):
+            self.lbl_title.setFont(get_font(18, QFont.Weight.Bold, target="sidebar"))
+        if hasattr(self, 'btn_add_proj'):
+            self.btn_add_proj.setFont(get_font(13, target="sidebar"))
+        if hasattr(self, 'btn_import_proj'):
+            self.btn_import_proj.setFont(get_font(13, target="sidebar"))
+        if hasattr(self, 'btn_mode_toggle'):
+            self.btn_mode_toggle.setFont(get_font(12, target="default"))
+        if hasattr(self, 'btn_uncheck_all'):
+            self.btn_uncheck_all.setFont(get_font(12, target="default"))
+        if hasattr(self, 'btn_export'):
+            self.btn_export.setFont(get_font(12, target="default"))
         
         # Redraw UI elements to apply fonts instantly
         expanded_cats = []
-        for i in range(self.categories_layout.count()):
-            w = self.categories_layout.itemAt(i).widget()
-            if hasattr(w, 'is_expanded') and w.is_expanded:
-                expanded_cats.append(w.category_name)
+        for i in range(self.sidebar_layout.count()):
+            item = self.sidebar_layout.itemAt(i)
+            if item and item.widget():
+                w = item.widget()
+                if hasattr(w, 'is_collapsed') and not w.is_collapsed:
+                    expanded_cats.append(w.name)
                 
         self.refresh_projects()
         
         # Restore expanded state
-        for i in range(self.categories_layout.count()):
-            w = self.categories_layout.itemAt(i).widget()
-            if hasattr(w, 'category_name') and w.category_name in expanded_cats:
-                if not w.is_expanded:
-                    w.toggle_expand()
+        for i in range(self.sidebar_layout.count()):
+            item = self.sidebar_layout.itemAt(i)
+            if item and item.widget():
+                w = item.widget()
+                if hasattr(w, 'name') and w.name in expanded_cats:
+                    if w.is_collapsed:
+                        w.toggle_collapse()
                 
         if self.current_project:
             self.load_project(self.current_project)
@@ -878,7 +992,7 @@ class PlannerApp(QMainWindow):
                 self.tasks_scroll.ensureWidgetVisible(w, 50, 50)
                 w.header.setStyleSheet(f"""
                     #TaskHeader {{
-                        background-color: rgba(255, 200, 200, 0.95);
+                        background-color: {hex_to_rgba(COLORS['highlight_bg'], 0.95)};
                         border: 2px solid {COLORS['accent']};
                         border-radius: 8px;
                         margin: 2px 10px 2px 0px;

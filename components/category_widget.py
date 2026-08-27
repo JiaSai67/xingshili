@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont, QCursor
-from config import get_font, COLORS, save_data
+from config import get_font, COLORS, hex_to_rgba, save_data
 
 class CategoryWidget(QWidget):
     def __init__(self, name, items, app_ref, is_uncategorized=False, parent=None):
@@ -13,7 +13,6 @@ class CategoryWidget(QWidget):
         self.setAcceptDrops(True)
         
         from PyQt6.QtWidgets import QApplication, QFrame
-        from config import get_font, COLORS
         self.placeholder = QFrame()
         self.placeholder.setFixedHeight(3)
         self.placeholder.setStyleSheet(f"background-color: {COLORS['accent']}; margin: 0px 10px;")
@@ -155,7 +154,7 @@ class CategoryWidget(QWidget):
     def dragEnterEvent(self, event):
         if event.mimeData().hasText() and event.mimeData().text().startswith("CAT_ITEM:"):
             event.acceptProposedAction()
-            self.header.setStyleSheet(f"background-color: rgba(239, 203, 214, 0.4);")
+            self.header.setStyleSheet(f"background-color: {hex_to_rgba(COLORS['bg_active'], 0.4)};")
 
     def dragMoveEvent(self, event):
         if event.mimeData().hasText() and event.mimeData().text().startswith("CAT_ITEM:"):

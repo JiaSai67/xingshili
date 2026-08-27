@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QApplication, QMenu
 from PyQt6.QtCore import Qt, QEvent, QTimer, pyqtProperty, QPropertyAnimation, QEasingCurve, QMimeData
 from PyQt6.QtGui import QFont, QCursor, QColor, QDrag
 
-from config import get_font, COLORS, save_data
+from config import get_font, COLORS, hex_to_rgba, save_data
 from components.hover_label import HoverLabel
 
 class ProjectButton(QWidget):
@@ -133,15 +133,15 @@ class ProjectButton(QWidget):
         
     def contextMenuEvent(self, event):
         menu = QMenu(self)
-        menu.setStyleSheet("""
-            QMenu {
-                background-color: #FCF8F9;
-                border: 1px solid #DFBAC5;
-                color: #4A4144;
-            }
-            QMenu::item:selected {
-                background-color: #EFCBD6;
-            }
+        menu.setStyleSheet(f"""
+            QMenu {{
+                background-color: {COLORS['bg_right']};
+                border: 1px solid {COLORS['divider_strong']};
+                color: {COLORS['text_main']};
+            }}
+            QMenu::item:selected {{
+                background-color: {COLORS['bg_active']};
+            }}
         """)
         
         settings = self.app_ref.projects.get("__settings__", {})
@@ -212,7 +212,7 @@ class ProjectButton(QWidget):
         if obj == self and not self.editor.isVisible():
             if event.type() == QEvent.Type.Enter:
                 if not self.is_active:
-                    self.setStyleSheet(f"background-color: rgba(239, 203, 214, 0.4);")
+                    self.setStyleSheet(f"background-color: {hex_to_rgba(COLORS['bg_active'], 0.4)};")
                 self.btn_del.setStyleSheet(f"color: {COLORS['divider_strong']}; background: transparent;")
             elif event.type() == QEvent.Type.Leave:
                 if not self.is_active:
@@ -317,7 +317,7 @@ class ProjectButton(QWidget):
         self.anim_color = QPropertyAnimation(self, b"err_color", self)
         self.anim_color.setDuration(400)
         self.anim_color.setStartValue(QColor(COLORS["text_main"]))
-        self.anim_color.setKeyValueAt(0.5, QColor("red"))
+        self.anim_color.setKeyValueAt(0.5, QColor(COLORS["error"]))
         self.anim_color.setEndValue(QColor(COLORS["text_main"]))
         
         self.anim_shake.start()
