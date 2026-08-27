@@ -1,7 +1,7 @@
 import sys
 from PyQt6.QtWidgets import QApplication
 
-VERSION = "1.0.3"
+VERSION = "1.0.4"
 
 if __name__ == "__main__":
     import ctypes

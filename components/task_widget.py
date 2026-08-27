@@ -115,11 +115,13 @@ class TaskWidget(QWidget):
         self.h_layout.addStretch()
         
         if self.level < 3:
-            self.btn_add = HoverLabel("＋", "transparent", COLORS["accent_hover"], 16, parent=self.header)
+            self.btn_add = HoverLabel("＋", COLORS["accent"], COLORS["accent_hover"], 16, parent=self.header)
+            self.btn_add.setToolTip("新增子項目")
             self.btn_add.clicked.connect(self.add_subtask)
             self.h_layout.addWidget(self.btn_add)
             
-        self.btn_del = HoverLabel("×", "transparent", COLORS["accent_hover"], 18, parent=self.header)
+        self.btn_del = HoverLabel("×", COLORS["accent"], COLORS["accent_hover"], 18, parent=self.header)
+        self.btn_del.setToolTip("刪除項目")
         self.btn_del.clicked.connect(self.delete_task)
         self.h_layout.addWidget(self.btn_del)
         self.h_layout.addSpacing(10)
@@ -229,15 +231,7 @@ class TaskWidget(QWidget):
 
     def eventFilter(self, obj, event):
         if obj == self.header and not self.editor.isVisible():
-            if event.type() == QEvent.Type.Enter:
-                self.btn_del.setStyleSheet(f"color: {COLORS['divider_strong']}; background: transparent;")
-                if self.level < 3:
-                    self.btn_add.setStyleSheet(f"color: {COLORS['divider_strong']}; background: transparent;")
-            elif event.type() == QEvent.Type.Leave:
-                self.btn_del.setStyleSheet("color: transparent; background: transparent;")
-                if self.level < 3:
-                    self.btn_add.setStyleSheet("color: transparent; background: transparent;")
-            elif event.type() == QEvent.Type.MouseButtonPress:
+            if event.type() == QEvent.Type.MouseButtonPress:
                 if event.button() == Qt.MouseButton.LeftButton:
                     self.drag_start_pos = event.pos()
                     if event.modifiers() != Qt.KeyboardModifier.ControlModifier:
