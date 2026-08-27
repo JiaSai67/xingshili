@@ -30,12 +30,18 @@ class ProjectButton(QWidget):
         
         self.editor = QLineEdit(self)
         self.editor.setFont(font)
+        self.editor.setPlaceholderText("請輸入清單名稱...")
         self.editor.setStyleSheet(f"""
             QLineEdit {{
-                background: transparent; 
-                border: none;
+                background-color: rgba(0, 0, 0, 0.05);
+                border: 1px solid {COLORS['divider_strong']};
+                border-radius: 4px;
                 color: {self._err_color.name()}; 
-                padding: 0px;
+                padding: 3px 8px;
+            }}
+            QLineEdit:focus {{
+                border: 1px solid {COLORS['accent']};
+                background-color: rgba(255, 255, 255, 0.9);
             }}
         """)
         self.editor.editingFinished.connect(self.finalize_edit)
@@ -133,21 +139,39 @@ class ProjectButton(QWidget):
         
     def contextMenuEvent(self, event):
         menu = QMenu(self)
-        menu.setStyleSheet(f"""
+        menu_style = f"""
             QMenu {{
                 background-color: {COLORS['bg_right']};
                 border: 1px solid {COLORS['divider_strong']};
+                border-radius: 8px;
                 color: {COLORS['text_main']};
+                padding: 4px;
+            }}
+            QMenu::item {{
+                padding: 6px 24px 6px 12px;
+                margin: 2px 4px;
+                border-radius: 5px;
             }}
             QMenu::item:selected {{
                 background-color: {COLORS['bg_active']};
+                color: {COLORS['text_title']};
             }}
-        """)
+            QMenu::separator {{
+                height: 1px;
+                background-color: {COLORS['divider_strong']};
+                margin: 4px 8px;
+            }}
+            QMenu::right-arrow {{
+                margin-right: 6px;
+            }}
+        """
+        menu.setStyleSheet(menu_style)
         
         settings = self.app_ref.projects.get("__settings__", {})
         categories = settings.get("categories", {})
         
         cat_menu = menu.addMenu("📁 加入分類")
+        cat_menu.setStyleSheet(menu_style)
         
         # Determine which categories this project is already in
         current_cats = []
@@ -158,20 +182,21 @@ class ProjectButton(QWidget):
         has_other_cats = False
         for cat_name in categories.keys():
             if cat_name not in current_cats:
-                action = cat_menu.addAction(cat_name)
+                action = cat_menu.addAction(f"🏷️ {cat_name}")
                 action.triggered.connect(lambda checked, c=cat_name: self.add_to_category(c))
                 has_other_cats = True
                 
         if has_other_cats:
             cat_menu.addSeparator()
             
-        action_new_cat = cat_menu.addAction("+ 新增分類")
+        action_new_cat = cat_menu.addAction("➕ 新增分類")
         action_new_cat.triggered.connect(self.create_new_category)
         
         if current_cats:
             rm_menu = menu.addMenu("❌ 從分類移除")
+            rm_menu.setStyleSheet(menu_style)
             for c in current_cats:
-                action = rm_menu.addAction(c)
+                action = rm_menu.addAction(f"🗑️ {c}")
                 action.triggered.connect(lambda checked, cat=c: self.remove_from_category(cat))
                 
         menu.exec(event.globalPos())
@@ -294,10 +319,15 @@ class ProjectButton(QWidget):
         if hasattr(self, 'editor'):
             self.editor.setStyleSheet(f"""
                 QLineEdit {{
-                    background: transparent; 
-                    border: none;
+                    background-color: rgba(0, 0, 0, 0.05);
+                    border: 1px solid {color.name()};
+                    border-radius: 4px;
                     color: {color.name()}; 
-                    padding: 0px;
+                    padding: 3px 8px;
+                }}
+                QLineEdit:focus {{
+                    border: 1px solid {color.name()};
+                    background-color: rgba(255, 255, 255, 0.9);
                 }}
             """)
             

@@ -802,16 +802,21 @@ class PlannerApp(QMainWindow):
         self.tasks_layout.addStretch()
 
     def animate_widget_enter(self, widget):
-        widget.setGraphicsEffect(QGraphicsOpacityEffect(widget))
-        widget.graphicsEffect().setOpacity(0.0)
+        effect = QGraphicsOpacityEffect(widget)
+        widget.setGraphicsEffect(effect)
+        effect.setOpacity(0.0)
         widget.show()
         
-        anim_op = QPropertyAnimation(widget.graphicsEffect(), b"opacity", self)
+        anim_op = QPropertyAnimation(effect, b"opacity", self)
         anim_op.setDuration(250)
         anim_op.setStartValue(0.0)
         anim_op.setEndValue(1.0)
         anim_op.setEasingCurve(QEasingCurve.Type.OutCubic)
         
+        def cleanup():
+            widget.setGraphicsEffect(None)
+            
+        anim_op.finished.connect(cleanup)
         widget._anim_group = anim_op
         anim_op.start()
 

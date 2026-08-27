@@ -52,7 +52,20 @@ class CategoryWidget(QWidget):
             
             self.editor = QLineEdit(self)
             self.editor.setFont(font)
-            self.editor.setStyleSheet(f"background: transparent; border: 1px solid {COLORS['divider_strong']}; color: {COLORS['text_main']}; padding: 0px;")
+            self.editor.setPlaceholderText("請輸入分類名稱...")
+            self.editor.setStyleSheet(f"""
+                QLineEdit {{
+                    background-color: rgba(0, 0, 0, 0.05);
+                    border: 1px solid {COLORS['divider_strong']};
+                    border-radius: 4px;
+                    color: {COLORS['text_main']};
+                    padding: 2px 6px;
+                }}
+                QLineEdit:focus {{
+                    border: 1px solid {COLORS['accent']};
+                    background-color: rgba(255, 255, 255, 0.9);
+                }}
+            """)
             self.editor.hide()
             self.editor.editingFinished.connect(self.finish_edit)
             header_layout.addWidget(self.editor)

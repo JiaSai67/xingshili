@@ -13,14 +13,45 @@ class AddParentButton(QWidget):
         self.setStyleSheet("background: transparent;")
         
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 15, 0, 15)
+        layout.setContentsMargins(0, 10, 10, 15)
+        
+        self.card = QFrame(self)
+        self.card.setObjectName("AddParentCard")
+        self.card.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.card.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        
+        self.update_opacity_style()
+        
+        card_layout = QHBoxLayout(self.card)
+        card_layout.setContentsMargins(14, 8, 14, 8)
         
         is_memo = self.app_ref.is_project_memo_mode()
         lbl_text = "＋ 新增備忘項目" if is_memo else "＋ 新增母項目"
-        self.lbl = HoverLabel(lbl_text, COLORS["divider_strong"], COLORS["accent_hover"], 14, True, parent=self)
-        self.lbl.clicked.connect(self.add_parent)
-        layout.addWidget(self.lbl)
+        self.lbl = QLabel(lbl_text, self.card)
+        self.lbl.setFont(get_font(13, weight=QFont.Weight.Bold, target="task"))
+        self.lbl.setStyleSheet(f"color: {COLORS['text_main']}; background: transparent;")
+        card_layout.addWidget(self.lbl)
+        
+        self.card.mousePressEvent = lambda e: self.add_parent() if e.button() == Qt.MouseButton.LeftButton else None
+        
+        layout.addWidget(self.card)
         layout.addStretch()
+        
+    def update_opacity_style(self):
+        opacity = self.app_ref.projects.get("__settings__", {}).get("task_opacity", 0.75)
+        bg_color = hex_to_rgba(COLORS['card_bg'], opacity)
+        bg_hover = hex_to_rgba(COLORS['card_bg'], min(1.0, opacity + 0.2))
+        self.card.setStyleSheet(f"""
+            #AddParentCard {{
+                background-color: {bg_color};
+                border: 1px dashed {COLORS['divider_strong']};
+                border-radius: 8px;
+            }}
+            #AddParentCard:hover {{
+                background-color: {bg_hover};
+                border: 1px solid {COLORS['accent']};
+            }}
+        """)
         
     def add_parent(self):
         project_tasks = self.app_ref.projects.get(self.app_ref.current_project, [])
@@ -99,12 +130,18 @@ class TaskWidget(QWidget):
         
         self.editor = QLineEdit(self.header)
         self.editor.setFont(font)
+        self.editor.setPlaceholderText("請輸入待辦內容...")
         self.editor.setStyleSheet(f"""
             QLineEdit {{
-                background: transparent; 
-                border: none;
+                background-color: rgba(0, 0, 0, 0.05);
+                border: 1px solid {COLORS['divider_strong']};
+                border-radius: 4px;
                 color: {COLORS['text_main']}; 
-                padding: 0px;
+                padding: 3px 8px;
+            }}
+            QLineEdit:focus {{
+                border: 1px solid {COLORS['accent']};
+                background-color: rgba(255, 255, 255, 0.9);
             }}
         """)
         self.editor.installEventFilter(self)
@@ -278,10 +315,18 @@ class TaskWidget(QWidget):
             QMenu {{
                 background-color: {COLORS['bg_right']};
                 border: 1px solid {COLORS['divider_strong']};
+                border-radius: 8px;
                 color: {COLORS['text_main']};
+                padding: 4px;
+            }}
+            QMenu::item {{
+                padding: 6px 24px 6px 12px;
+                margin: 2px 4px;
+                border-radius: 5px;
             }}
             QMenu::item:selected {{
                 background-color: {COLORS['bg_active']};
+                color: {COLORS['text_title']};
             }}
         """)
         action = menu.addAction("⭐ 加入我的最愛")
@@ -388,12 +433,11 @@ class TaskWidget(QWidget):
         new_task = {"text": "", "done": False, "children": []}
         self.task_data["children"].append(new_task)
         
+        self.task_data["collapsed"] = False
         self.update_view()
-        if self.task_data.get("collapsed", False):
-            self.toggle_collapse()
-        else:
-            self.children_container.setVisible(True)
-            
+        self.children_container.setVisible(True)
+        save_data(self.app_ref.projects)
+        
         new_widget = TaskWidget(new_task, self.level + 1, self.task_data["children"], self.app_ref, is_new=True, parent=self.children_container)
         new_widget.hide()
         self.c_layout.addWidget(new_widget)
